@@ -1,0 +1,59 @@
+version: "3.8"
+services:
+  # Application
+  app:
+    build:
+      context: ./docker/services/app
+      dockerfile: app.dockerfile
+    working_dir: /var/www
+    env_file: .env
+    volumes:
+      - ./:/var/www
+    networks:
+      - pharmacy-hospital
+    
+  # Web Server
+  web:
+    build:
+      context: ./docker/services/web
+      dockerfile: web.dockerfile
+    working_dir: /var/www
+    restart: always
+    volumes:
+      - ./:/var/www
+    ports:
+      - "8081:80"
+    networks:
+      - pharmacy-hospital
+
+  # Database
+  database:
+    image: mysql:8.0.25
+    volumes:
+      - ./docker/volumes/mysql:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: $${database.default.database}
+      MYSQL_ALLOW_EMPTY_PASSWORD: true
+      MYSQL_TCP_PORT: 3307
+    ports:
+      - "3307:3307"
+    networks:
+      - pharmacy-hospital
+
+  npm:
+    image: node:alpine
+    container_name: npm
+    volumes:
+      - ./:/var/www
+      - .env:/var/www/.env
+    ports:
+      - 8081:80
+    working_dir: /var/www
+    profiles: ["npm"]
+    entrypoint: ['npm']
+    networks:
+      - pharmacy-hospital
+
+networks:
+  pharmacy-hospital:
+    name: "pharmacy-hospital-network"
